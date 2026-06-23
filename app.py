@@ -75,6 +75,8 @@ def health_check():
 
 @app.post("/callback")
 def callback():
+    print("webhook received")
+
     # 沒有 LINE 憑證時仍可啟動 Flask，但不處理 webhook。
     if not config.has_line_credentials:
         abort(503)
@@ -94,19 +96,18 @@ def callback():
 
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_text_message(event):
+    print("message event received")
+
     # 每次收到訊息都先確保 LINE 使用者已存在於 users 表。
     # 這裡不指定 borrower/lender 固定身份。角色是專案層級資料，
     # 只會存放在 loan_project_members。
-    user = ensure_user(event.source.user_id)
     user_text = event.message.text.strip()
+    print(f"user_text: {user_text}")
 
-    try:
-        reply = route_user_message(user, user_text)
-    except (ValueError, PermissionError) as exc:
-        reply = text_message(f"{exc}\n\n{help_text()}")
-
-    if isinstance(reply, str):
-        reply = text_message(reply)
+    if user_text in {"開始", "主選單", "選單"}:
+        reply = text_message("主選單測試成功")
+    else:
+        reply = text_message(f"收到：{user_text}")
 
     line_bot_api.reply_message(
         ReplyMessageRequest(
@@ -114,6 +115,7 @@ def handle_text_message(event):
             messages=[reply],
         )
     )
+    print("reply sent")
 
 
 @handler.add(FollowEvent)
@@ -134,6 +136,10 @@ def route_user_message(user, user_text):
     # 目前路由保持簡單，之後若改成按鈕或 rich menu，
     # 仍可沿用同一批 loan_service 函式。
     state = get_user_state(user["id"])
+
+    if user_text in {"你好","Hello"}:
+        reply_text = "歡迎使用借貸管理系統"
+
 
     if user_text in {"開始", "主選單", "選單"}:
         clear_user_state(user["id"])
