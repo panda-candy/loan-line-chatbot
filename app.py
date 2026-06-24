@@ -21,15 +21,18 @@ from linebot.v3.messaging import (
 )
 from linebot.v3.webhooks import FollowEvent, MessageEvent, TextMessageContent
 
-from ai_support import answer_faq, faq_menu_text
 from config import config
+from handlers.ai_support import handle_ai_faq, handle_ai_support
+from handlers.create_project import handle_create_project_start, handle_project_role_selected
+from handlers.credit import handle_credit_record
+from handlers.join_project import handle_invite_code_received, handle_join_project_start
+from handlers.my_projects import handle_my_projects
+from handlers.rewards import handle_rewards
 from line_messages import (
     help_text,
     main_menu_message,
-    main_menu_text,
     project_summary,
     projects_text,
-    role_prompt_message,
     schedule_preview_text,
     terms_help_text,
     text_message,
@@ -104,10 +107,14 @@ def handle_text_message(event):
     user_text = event.message.text.strip()
     print(f"user_text: {user_text}")
 
-    if user_text in {"開始", "主選單", "選單"}:
-        reply = text_message("主選單測試成功")
-    else:
-        reply = text_message(f"收到：{user_text}")
+    user = ensure_user(event.source.user_id)
+    try:
+        reply = route_user_message(user, user_text)
+    except (ValueError, PermissionError) as exc:
+        reply = f"{exc}\n\n{help_text()}"
+
+    if isinstance(reply, str):
+        reply = text_message(reply)
 
     line_bot_api.reply_message(
         ReplyMessageRequest(
@@ -137,10 +144,6 @@ def route_user_message(user, user_text):
     # 仍可沿用同一批 loan_service 函式。
     state = get_user_state(user["id"])
 
-    if user_text in {"你好","Hello"}:
-        reply_text = "歡迎使用借貸管理系統"
-
-
     if user_text in {"開始", "主選單", "選單"}:
         clear_user_state(user["id"])
         return main_menu_message()
@@ -149,53 +152,35 @@ def route_user_message(user, user_text):
         clear_user_state(user["id"])
         return help_text()
 
-    if user_text in {"MENU_CREATE_PROJECT", "建立借貸專案", "建立專案"}:
-        # 暫存短期對話狀態。下一句「我是借款人/我是放款人」
-        # 只代表這個新專案中的角色，不是使用者的全域身份。
-        set_user_state(user["id"], "awaiting_project_role")
-        return role_prompt_message()
+    if user_text in {"MENU_CREATE_PROJECT", "建立專案", "建立借貸專案"}:
+        return handle_create_project_start(user)
 
     if user_text in {"MENU_JOIN_PROJECT", "加入專案"}:
-        set_user_state(user["id"], "awaiting_invite_code")
-        return "請輸入邀請碼。格式：加入專案 邀請碼\n例如：加入專案 ABC123XYZ789"
+        return handle_join_project_start(user)
 
-    if user_text == "MENU_MY_PROJECTS":
-        return projects_text(list_projects_for_user(user["id"]))
+    if user_text in {"MENU_MY_PROJECTS", "我的專案"}:
+        return handle_my_projects(user)
 
-    if user_text == "MENU_CREDIT_RECORD":
-        return f"目前平台內信用分數：{latest_credit_score(user['id'])}"
+    if user_text in {"MENU_CREDIT_RECORD", "信用紀錄"}:
+        return handle_credit_record(user)
 
-    if user_text == "MENU_AI_SUPPORT":
+    if user_text in {"MENU_AI_SUPPORT", "AI客服", "AI 客服"}:
         set_user_state(user["id"], "awaiting_ai_question")
-        return faq_menu_text()
+        return handle_ai_support(user)
 
-    if user_text == "MENU_REWARDS":
-        return rewards_text(user["id"])
+    if user_text in {"MENU_REWARDS", "集點優惠"}:
+        return handle_rewards(user)
 
-    if state and state["state_key"] == "awaiting_invite_code" and not user_text.startswith("加入"):
-        project = join_project_by_invite_code(user["id"], user_text)
-        clear_user_state(user["id"])
-        if not project:
-            return "找不到可加入的專案，請確認邀請碼是否正確或是否已過期。"
-        if project["current_user_role"] == "lender":
-            return f"配對完成。\n{project_summary(project)}\n\n你是放款人，請輸入「設定條件」。"
-        return f"配對完成。\n{project_summary(project)}\n\n請等待放款人設定借貸條件。"
+    if state and state["state_key"] == "waiting_invite_code":
+        return handle_invite_code_received(user, user_text)
 
     if state and state["state_key"] == "awaiting_ai_question":
-        return answer_faq(user_text)
+        return handle_ai_faq(user, user_text)
 
     if user_text in {"我是借款人", "我是放款人"}:
-        if not state or state["state_key"] != "awaiting_project_role":
-            return "請先輸入「建立借貸專案」，再選擇你在該專案中的角色。"
-        # 這裡選到的角色會寫入 loan_project_members，不會寫入 users。
-        role = "borrower" if user_text == "我是借款人" else "lender"
-        project = create_project(user["id"], role)
-        clear_user_state(user["id"])
-        return (
-            f"{project_summary(project)}\n\n"
-            "請把邀請碼給另一方，對方輸入：\n"
-            f"加入專案 {project['invite_code']}"
-        )
+        if not state or state["state_key"] != "waiting_project_role":
+            return "請先輸入「建立專案」，再選擇你在該專案中的角色。"
+        return handle_project_role_selected(user, user_text)
 
     if user_text.startswith("加入借貸專案") or user_text.startswith("加入專案"):
         # 用邀請碼加入時，系統會自動指定相對角色：

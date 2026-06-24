@@ -24,9 +24,11 @@ CREATE TABLE IF NOT EXISTS users (
     display_name VARCHAR(100),
     phone VARCHAR(30),
     email VARCHAR(255),
+    referral_code VARCHAR(8) NULL,
     status ENUM('active', 'blocked', 'deleted') NOT NULL DEFAULT 'active',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_users_referral_code (referral_code),
     INDEX idx_users_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

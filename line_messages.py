@@ -12,7 +12,7 @@ MAIN_MENU_ACTIONS = [
     ("加入專案", "MENU_JOIN_PROJECT"),
     ("我的專案", "MENU_MY_PROJECTS"),
     ("信用紀錄", "MENU_CREDIT_RECORD"),
-    ("AI 客服", "MENU_AI_SUPPORT"),
+    ("AI客服", "MENU_AI_SUPPORT"),
     ("集點優惠", "MENU_REWARDS"),
 ]
 
@@ -42,7 +42,7 @@ def main_menu_text():
         "加入專案\n"
         "我的專案\n"
         "信用紀錄\n"
-        "AI 客服\n"
+        "AI客服\n"
         "集點優惠"
     )
 
@@ -60,7 +60,7 @@ def help_text():
         "確認收款 還款紀錄ID\n"
         "提出變更 專案ID 原因\n"
         "接受變更 申請ID\n"
-        "AI 客服\n"
+        "AI客服\n"
         "集點優惠"
     )
 

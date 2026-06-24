@@ -1,23 +1,15 @@
-"""集點優惠第一版。
+"""集點優惠功能 handler。
 
-目前尚未建立正式點數資料表，因此先用固定起始點數與規則文字。
-之後可新增 rewards 資料表，再把 get_user_points 改成資料庫查詢。
+目前集點優惠包含「我的推薦碼」與介紹好友集點規則。
 """
 
 from db import get_or_create_referral_code
 
 
-DEFAULT_POINTS = 0
-
-
-def get_user_points(user_id):
-    """取得使用者目前點數；第一版先回傳固定值。"""
-    return DEFAULT_POINTS
-
-
-def rewards_text(user_id):
+def handle_rewards(user):
     """顯示目前點數、個人推薦碼、介紹好友集點規則與點數用途。"""
-    points = get_user_points(user_id)
+    user_id = user["id"]
+    print(f"[MENU] {user_id} -> 集點優惠")
     referral_code = get_or_create_referral_code(user_id)
     # TODO: 未來新用戶註冊時可輸入推薦碼。
     # - 系統查詢推薦人。
@@ -25,8 +17,8 @@ def rewards_text(user_id):
     # - 建立 rewards_transactions 紀錄。
     # - 每次點數異動需記錄來源、時間、專案或推薦對象。
     return (
-        f"集點獎勵計畫\n\n"
-        f"目前點數：{points} 點\n\n"
+        "集點獎勵計畫\n\n"
+        "目前點數：0 點\n\n"
         "你的推薦碼：\n"
         f"{referral_code}\n\n"
         "分享給好友加入平台，\n"
