@@ -10,7 +10,7 @@
 這樣不啟動 Flask server 也能測試核心邏輯。
 """
 
-from flask import Flask, abort, request
+from flask import Flask, abort, render_template_string, request
 from linebot.v3 import WebhookHandler
 from linebot.v3.exceptions import InvalidSignatureError
 from linebot.v3.messaging import (
@@ -71,9 +71,291 @@ scheduler = start_scheduler(line_bot_api)
 
 
 @app.get("/")
+def home():
+    """專題展示首頁；LINE Webhook 仍由 /callback 獨立處理。"""
+    return render_template_string(
+        """
+        <!doctype html>
+        <html lang="zh-Hant">
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>雙邊借貸還款提醒與信用紀錄管理系統</title>
+            <style>
+                :root {
+                    color-scheme: light;
+                    --primary: #2563eb;
+                    --primary-dark: #1d4ed8;
+                    --text: #172033;
+                    --muted: #64748b;
+                    --border: #e2e8f0;
+                    --surface: #ffffff;
+                    --background: #f8fafc;
+                    --success: #15803d;
+                    --warning: #b45309;
+                }
+
+                * { box-sizing: border-box; }
+
+                body {
+                    margin: 0;
+                    color: var(--text);
+                    background: var(--background);
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                                 "Noto Sans TC", sans-serif;
+                    line-height: 1.7;
+                }
+
+                .container {
+                    width: min(1080px, calc(100% - 32px));
+                    margin: 0 auto;
+                }
+
+                .hero {
+                    padding: 72px 0 48px;
+                    text-align: center;
+                    background: var(--surface);
+                    border-bottom: 1px solid var(--border);
+                }
+
+                .eyebrow {
+                    margin: 0 0 12px;
+                    color: var(--primary);
+                    font-weight: 700;
+                    letter-spacing: .08em;
+                }
+
+                h1 {
+                    max-width: 850px;
+                    margin: 0 auto;
+                    font-size: clamp(2rem, 6vw, 3.5rem);
+                    line-height: 1.25;
+                }
+
+                .subtitle {
+                    max-width: 720px;
+                    margin: 20px auto 0;
+                    color: var(--muted);
+                    font-size: clamp(1rem, 3vw, 1.25rem);
+                }
+
+                main { padding: 40px 0 64px; }
+
+                .grid {
+                    display: grid;
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                    gap: 20px;
+                }
+
+                .card {
+                    padding: 26px;
+                    background: var(--surface);
+                    border: 1px solid var(--border);
+                    border-radius: 18px;
+                    box-shadow: 0 8px 28px rgba(15, 23, 42, .05);
+                }
+
+                .card.full { grid-column: 1 / -1; }
+                h2 { margin: 0 0 14px; font-size: 1.35rem; }
+                p { margin: 0; color: var(--muted); }
+
+                ul {
+                    display: grid;
+                    gap: 10px;
+                    margin: 0;
+                    padding-left: 22px;
+                }
+
+                .features {
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                    list-style: none;
+                    padding: 0;
+                }
+
+                .features li {
+                    padding: 12px 14px;
+                    background: #f8fafc;
+                    border-radius: 10px;
+                }
+
+                .status-list { list-style: none; padding: 0; }
+                .status-list li {
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 16px;
+                    padding: 10px 0;
+                    border-bottom: 1px solid var(--border);
+                }
+                .status-list li:last-child { border-bottom: 0; }
+                .done { color: var(--success); font-weight: 700; }
+                .pending { color: var(--warning); font-weight: 700; }
+
+                .actions {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 12px;
+                    margin-top: 18px;
+                }
+
+                .button {
+                    display: inline-block;
+                    padding: 11px 18px;
+                    color: #fff;
+                    background: var(--primary);
+                    border-radius: 10px;
+                    font-weight: 700;
+                    text-decoration: none;
+                    transition: background .2s, transform .2s;
+                }
+
+                .button:hover {
+                    background: var(--primary-dark);
+                    transform: translateY(-1px);
+                }
+
+                footer {
+                    padding: 24px 0;
+                    color: var(--muted);
+                    text-align: center;
+                    background: var(--surface);
+                    border-top: 1px solid var(--border);
+                }
+
+                @media (max-width: 720px) {
+                    .hero { padding: 48px 0 36px; }
+                    main { padding-top: 24px; }
+                    .grid, .features { grid-template-columns: 1fr; }
+                    .card { padding: 20px; }
+                    .status-list li {
+                        align-items: flex-start;
+                        flex-direction: column;
+                        gap: 2px;
+                    }
+                    .actions { flex-direction: column; }
+                    .button { text-align: center; }
+                }
+            </style>
+        </head>
+        <body>
+            <header class="hero">
+                <div class="container">
+                    <p class="eyebrow">LINE CHATBOT 專題展示</p>
+                    <h1>雙邊借貸還款提醒與信用紀錄管理系統</h1>
+                    <p class="subtitle">基於 LINE ChatBot 的個人借貸專案管理平台</p>
+                </div>
+            </header>
+
+            <main class="container">
+                <div class="grid">
+                    <section class="card full">
+                        <h2>系統簡介</h2>
+                        <p>
+                            本系統透過 LINE ChatBot 協助使用者管理個人借貸專案，
+                            整合專案配對、借貸條件、還款提醒、信用紀錄與客服功能，
+                            讓借貸雙方能以熟悉的 LINE 操作完成日常管理。
+                        </p>
+                    </section>
+
+                    <section class="card">
+                        <h2>主要功能</h2>
+                        <ul class="features">
+                            <li>建立借貸專案</li>
+                            <li>邀請碼加入專案</li>
+                            <li>我的專案查詢</li>
+                            <li>信用紀錄</li>
+                            <li>AI 客服</li>
+                            <li>推薦碼與集點優惠</li>
+                        </ul>
+                    </section>
+
+                    <section class="card">
+                        <h2>LINE Bot 使用方式</h2>
+                        <ul>
+                            <li>加入 LINE Bot 好友並開啟聊天室。</li>
+                            <li>輸入「主選單」或點選選單功能。</li>
+                            <li>依畫面提示建立專案或輸入邀請碼。</li>
+                            <li>透過聊天室查詢專案、信用紀錄與優惠。</li>
+                        </ul>
+                    </section>
+
+                    <section class="card">
+                        <h2>專案目前狀態</h2>
+                        <ul class="status-list">
+                            <li><span>LINE Webhook</span><span class="done">已連線</span></li>
+                            <li><span>Render 部署</span><span class="done">已完成</span></li>
+                            <li><span>GitHub 版本控制</span><span class="done">已完成</span></li>
+                            <li><span>主選單</span><span class="done">已完成</span></li>
+                            <li><span>建立 / 加入 / 我的專案</span><span class="pending">開發中</span></li>
+                            <li><span>借貸條件與還款排程</span><span class="pending">下一階段</span></li>
+                        </ul>
+                    </section>
+
+                    <section class="card">
+                        <h2>測試連結</h2>
+                        <p>以下頁面可用來確認服務狀態與後續功能入口。</p>
+                        <div class="actions">
+                            <a class="button" href="/health">健康檢查</a>
+                            <a class="button" href="/my-projects">我的專案展示頁</a>
+                            <a class="button" href="/projects/demo/terms">設定借貸條件展示頁</a>
+                        </div>
+                    </section>
+                </div>
+            </main>
+
+            <footer>
+                <div class="container">Loan LINE ChatBot Project</div>
+            </footer>
+        </body>
+        </html>
+        """
+    )
+
+
+@app.get("/health")
 def health_check():
-    # 提供本機與部署平台快速確認 Flask 是否正常啟動。
     return {"status": "ok", "service": "loan-line-chatbot"}
+
+
+@app.get("/my-projects")
+def my_projects_page():
+    return render_template_string(
+        """
+        <!doctype html>
+        <html lang="zh-Hant">
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>我的專案</title>
+        </head>
+        <body style="font-family:sans-serif;padding:32px">
+            <h1>我的專案頁面開發中</h1>
+            <p><a href="/">返回首頁</a></p>
+        </body>
+        </html>
+        """
+    )
+
+
+@app.get("/projects/<project_id>/terms")
+def project_terms_page(project_id):
+    return render_template_string(
+        """
+        <!doctype html>
+        <html lang="zh-Hant">
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>設定借貸條件</title>
+        </head>
+        <body style="font-family:sans-serif;padding:32px">
+            <h1>設定借貸條件頁面開發中</h1>
+            <p>project_id: {{ project_id }}</p>
+            <p><a href="/">返回首頁</a></p>
+        </body>
+        </html>
+        """,
+        project_id=project_id,
+    )
 
 
 @app.post("/callback")
